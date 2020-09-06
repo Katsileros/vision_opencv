@@ -10,6 +10,6 @@ target_link_libraries(${PROJECT_NAME}-utest
   ${catkin_LIBRARIES}
 )
 
-catkin_add_nosetests(enumerants.py)
-catkin_add_nosetests(conversions.py)
-catkin_add_nosetests(python_bindings.py)
+# catkin_add_nosetests(enumerants.py)
+# catkin_add_nosetests(conversions.py)
+# catkin_add_nosetests(python_bindings.py)
