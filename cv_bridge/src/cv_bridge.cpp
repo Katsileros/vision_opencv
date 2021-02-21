@@ -77,7 +77,9 @@ int getCvType(const std::string& encoding)
   if (encoding == enc::RGB8)   return CV_8UC3;
   if (encoding == enc::MONO16) return CV_16UC1;
   if (encoding == enc::BGR16)  return CV_16UC3;
+  if (encoding == enc::BGR24)  return CV_24UC3;
   if (encoding == enc::RGB16)  return CV_16UC3;
+  if (encoding == enc::RGB24)  return CV_24UC3;
   if (encoding == enc::BGRA8)  return CV_8UC4;
   if (encoding == enc::RGBA8)  return CV_8UC4;
   if (encoding == enc::BGRA16) return CV_16UC4;
@@ -100,12 +102,12 @@ int getCvType(const std::string& encoding)
   boost::cmatch m;
 
   if (boost::regex_match(encoding.c_str(), m,
-        boost::regex("(8U|8S|16U|16S|32S|32F|64F)C([0-9]+)"))) {
+        boost::regex("(8U|8S|16U|24U|16S|32S|32F|64F)C([0-9]+)"))) {
     return CV_MAKETYPE(depthStrToInt(m[1].str()), atoi(m[2].str().c_str()));
   }
 
   if (boost::regex_match(encoding.c_str(), m,
-        boost::regex("(8U|8S|16U|16S|32S|32F|64F)"))) {
+        boost::regex("(8U|8S|16U|24U|16S|32S|32F|64F)"))) {
     return CV_MAKETYPE(depthStrToInt(m[1].str()), 1);
   }
 
@@ -119,8 +121,8 @@ enum Encoding { INVALID = -1, GRAY = 0, RGB, BGR, RGBA, BGRA, YUV422, BAYER_RGGB
 Encoding getEncoding(const std::string& encoding)
 {
   if ((encoding == enc::MONO8) || (encoding == enc::MONO16)) return GRAY;
-  if ((encoding == enc::BGR8) || (encoding == enc::BGR16))  return BGR;
-  if ((encoding == enc::RGB8) || (encoding == enc::RGB16))  return RGB;
+  if ((encoding == enc::BGR8) || (encoding == enc::BGR16) || (encoding == enc::BGR24))  return BGR;
+  if ((encoding == enc::RGB8) || (encoding == enc::RGB16) || (encoding == enc::RGB24))  return RGB;
   if ((encoding == enc::BGRA8) || (encoding == enc::BGRA16))  return BGRA;
   if ((encoding == enc::RGBA8) || (encoding == enc::RGBA16))  return RGBA;
   if (encoding == enc::YUV422) return YUV422;
@@ -305,7 +307,7 @@ CvImagePtr toCvCopyImpl(const cv::Mat& source,
   // Copy metadata
   CvImagePtr ptr = boost::make_shared<CvImage>();
   ptr->header = src_header;
-  
+
   // Copy to new buffer if same encoding requested
   if (dst_encoding.empty() || dst_encoding == src_encoding)
   {
@@ -325,14 +327,23 @@ CvImagePtr toCvCopyImpl(const cv::Mat& source,
         // Same number of channels, but different bit depth
         int src_depth = enc::bitDepth(src_encoding);
         int dst_depth = enc::bitDepth(dst_encoding);
+
         // Keep the number of channels for now but changed to the final depth
         int image2_type = CV_MAKETYPE(CV_MAT_DEPTH(getCvType(dst_encoding)), image1.channels());
 
-        // Do scaling between CV_8U [0,255] and CV_16U [0,65535] images.
+        // Do scaling between CV_8U [0,255] and CV_16U [0,65535] or CV_24U [0, 16777216] images.
         if (src_depth == 8 && dst_depth == 16)
           image1.convertTo(image2, image2_type, 65535. / 255.);
+        else if(src_depth == 8 && dst_depth == 24)
+          image1.convertTo(image2, image2_type, 16777216. / 255.);
+        else if(src_depth == 16 && dst_depth == 24)
+          image1.convertTo(image2, image2_type, 16777216. / 65535.);
         else if (src_depth == 16 && dst_depth == 8)
           image1.convertTo(image2, image2_type, 255. / 65535.);
+        else if (src_depth == 24 && dst_depth == 8) 
+          image1.convertTo(image2, image2_type, 255. / 16777216.);
+        else if (src_depth == 24 && dst_depth == 16)
+          image1.convertTo(image2, image2_type, 65535. / 16777216.);
         else
           image1.convertTo(image2, image2_type);
       }
@@ -565,7 +576,8 @@ CvImageConstPtr cvtColorForDisplay(const CvImageConstPtr& source,
       {
         // We choose BGR by default here as we assume people will use OpenCV
         if ((enc::bitDepth(source->encoding) == 8) ||
-            (enc::bitDepth(source->encoding) == 16))
+            (enc::bitDepth(source->encoding) == 16) ||
+            (enc::bitDepth(source->encoding) == 24))
           encoding = enc::BGR8;
         else
           throw std::runtime_error("Unsupported depth of the source encoding " + encoding);
@@ -680,6 +692,8 @@ CvImageConstPtr cvtColorForDisplay(const CvImageConstPtr& source,
     source_typed->encoding = enc::BGR8;
   else if (source->encoding == "CV_16UC4")
     source_typed->encoding = enc::BGRA8;
+  else if (source->encoding == "CV_24UC3")
+    source_typed->encoding = enc::BGR8;
 
   // If no conversion is needed, don't convert
   if (source_typed->encoding == encoding)
