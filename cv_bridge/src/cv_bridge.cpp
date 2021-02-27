@@ -48,6 +48,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <cv_bridge/rgb_colors.h>
 
+#define CV_24UC3 CV_MAKETYPE(24, 3)
+
 namespace enc = sensor_msgs::image_encodings;
 
 namespace cv_bridge {
