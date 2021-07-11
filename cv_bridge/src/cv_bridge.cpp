@@ -49,6 +49,7 @@
 #include <cv_bridge/rgb_colors.h>
 
 #define CV_24UC3 CV_MAKETYPE(24, 3)
+#define CV_24UC1 CV_MAKETYPE(24, 1)
 
 namespace enc = sensor_msgs::image_encodings;
 
@@ -93,6 +94,7 @@ int getCvType(const std::string& encoding)
   if (encoding == enc::BAYER_GBRG8) return CV_8UC1;
   if (encoding == enc::BAYER_GRBG8) return CV_8UC1;
   if (encoding == enc::BAYER_RGGB16) return CV_16UC1;
+  if (encoding == enc::BAYER_RGGB24) return CV_24UC1;
   if (encoding == enc::BAYER_BGGR16) return CV_16UC1;
   if (encoding == enc::BAYER_GBRG16) return CV_16UC1;
   if (encoding == enc::BAYER_GRBG16) return CV_16UC1;
@@ -129,7 +131,7 @@ Encoding getEncoding(const std::string& encoding)
   if ((encoding == enc::RGBA8) || (encoding == enc::RGBA16))  return RGBA;
   if (encoding == enc::YUV422) return YUV422;
 
-  if ((encoding == enc::BAYER_RGGB8) || (encoding == enc::BAYER_RGGB16)) return BAYER_RGGB;
+  if ((encoding == enc::BAYER_RGGB8) || (encoding == enc::BAYER_RGGB16) || (encoding == enc::BAYER_RGGB24)) return BAYER_RGGB;
   if ((encoding == enc::BAYER_BGGR8) || (encoding == enc::BAYER_BGGR16)) return BAYER_BGGR;
   if ((encoding == enc::BAYER_GBRG8) || (encoding == enc::BAYER_GBRG16)) return BAYER_GBRG;
   if ((encoding == enc::BAYER_GRBG8) || (encoding == enc::BAYER_GRBG16)) return BAYER_GRBG;
